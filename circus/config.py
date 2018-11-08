@@ -223,7 +223,7 @@ def get_config(config_file):
                                                    int)
                 elif opt == 'warmup_delay':
                     watcher['warmup_delay'] = dget(section, 'warmup_delay', 0,
-                                                   int)
+                                                   float)
                 elif opt == 'executable':
                     watcher['executable'] = dget(section, 'executable', None,
                                                  str)
@@ -238,7 +238,7 @@ def get_config(config_file):
                     watcher['max_retry'] = dget(section, "max_retry", 5, int)
                 elif opt == 'graceful_timeout':
                     watcher['graceful_timeout'] = dget(
-                        section, "graceful_timeout", 30, int)
+                        section, "graceful_timeout", 30, float)
                 elif opt.startswith('stderr_stream') or \
                         opt.startswith('stdout_stream'):
                     stream_name, stream_opt = opt.split(".", 1)
@@ -250,9 +250,8 @@ def get_config(config_file):
                     watcher['priority'] = dget(section, "priority", 0, int)
                 elif opt == 'use_papa' and dget(section, 'use_papa', False,
                                                 bool):
-                    if papa:
-                        watcher['use_papa'] = True
-                    else:
+                    if watcher['use_papa'] and not papa:
+                        watcher['use_papa'] = False
                         warnings.warn("Config file says use_papa but the papa "
                                       "module is missing.",
                                       ImportWarning)

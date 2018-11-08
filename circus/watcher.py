@@ -27,7 +27,7 @@ from circus.stream.papa_redirector import PapaRedirector
 from circus.util import parse_env_dict, resolve_name, tornado_sleep, IS_WINDOWS
 from circus.util import papa
 from circus.py3compat import bytestring, is_callable, b, PY2
-
+from circus.stream.file_stream import FileStream
 
 class Watcher(object):
 
@@ -275,7 +275,8 @@ class Watcher(object):
                           "stdout_stream_conf", "on_demand",
                           "stderr_stream_conf", "max_age", "max_age_variance",
                           "close_child_stdin", "close_child_stdout",
-                          "close_child_stderr", "use_papa") +
+                          "close_child_stderr", "use_papa", "stderr_stream",
+                          "stdout_stream") +
                          tuple(options.keys()))
 
         if not working_dir:
@@ -1087,6 +1088,15 @@ class Watcher(object):
         if key in self._options:
             self._options[key] = val
             action = -1    # XXX for now does not trigger a reload
+        elif key == "singleton":
+            self.singleton = util.to_bool(val)
+            action = -1
+        elif key == "copy_env":
+            self.copy_env = util.to_bool(val)
+            action = -1
+        elif key == "use_papa":
+            self.use_papa = util.to_bool(val)
+            action = -1
         elif key == "numprocesses":
             val = int(val)
             if val < 0:
@@ -1168,10 +1178,21 @@ class Watcher(object):
     def options(self, *args):
         options = []
         for name in sorted(self.optnames):
+            # ignore the following: __name__, std[out|err]_stream_conf
+            # none of them are valid options for the ini file, they are
+            # only used internally
+            if (name in ['__name__', 'stdout_stream_conf', 'stderr_stream_conf']):
+                continue
             if name in self._options:
                 options.append((name, self._options[name]))
             else:
-                options.append((name, getattr(self, name)))
+                # some of the options are FileStream class/subclass
+                # add the 'name' of the class to the options output, not the class
+                if (issubclass(type(getattr(self, name)), FileStream)):
+                    if (name not in ['stdout_stream', 'stderr_stream', 'stdin_stream']):
+                        options.append((name, getattr(self, name).__class__.__name__))
+                else:
+                    options.append((name, getattr(self, name)))
         return options
 
     def is_stopping(self):

@@ -67,12 +67,14 @@ class Get(Command):
 
         # get options values. It return an error if one of the asked
         # options isn't found
+        # reuse the watcher.options() call the 'options' command uses
         options = {}
+        opts = dict(watcher.options())
         for name in props.get('keys', []):
-            if name in watcher.optnames:
-                options[name] = getattr(watcher, name)
+            if name in opts:
+                options[name] = opts[name]
             else:
-                raise MessageError("%r option not found" % name)
+                raise MessageError('%r option not found' % name)
 
         return {"options": options}
 
